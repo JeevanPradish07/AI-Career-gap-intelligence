@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# ⚠️ SECRET — NEVER COMMIT THIS
+.env
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node / Frontend
+node_modules/
+.next/
+dist/
+build/
+*.local
+
+# ML data — large files, build locally
+ml_data/job_vectors/job_corpus.faiss
+ml_data/job_vectors/job_metadata.json
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Uploads (local dev)
+backend/uploads/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/

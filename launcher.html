@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerAI — Platform Launcher</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #06090f; --surface: #0f1827; --s2: #141f30; --s3: #1a2840;
+      --border: rgba(99,179,255,0.10); --border2: rgba(99,179,255,0.20);
+      --accent: #3b82f6; --green: #22c55e; --red: #ef4444;
+      --yellow: #f59e0b; --purple: #8b5cf6;
+      --text: #e2e8f0; --muted: #64748b;
+    }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      padding: 32px 16px;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,130,246,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 80% 100%, rgba(139,92,246,0.08) 0%, transparent 60%);
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 32px; }
+    .logo { font-size: 36px; margin-bottom: 12px; }
+    h1 { font-size: 28px; font-weight: 800;
+      background: linear-gradient(135deg, #e2e8f0, #93c5fd 50%, #c4b5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+    /* Card */
+    .card { background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 24px; width: 100%; max-width: 720px; margin-bottom: 16px; }
+    .card-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+
+    /* Server row */
+    .server-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .server-pill {
+      flex: 1; min-width: 200px;
+      background: var(--s2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+      transition: all 0.3s;
+    }
+    .server-pill.running { border-color: rgba(34,197,94,0.3); box-shadow: 0 0 24px rgba(34,197,94,0.15); }
+    .server-pill.stopped { border-color: rgba(239,68,68,0.15); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: all 0.3s; }
+    .dot.running { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1.8s ease-in-out infinite; }
+    .dot.stopped { background: var(--red); }
+    .dot.unknown { background: var(--muted); }
+    @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } }
+    .server-info { flex: 1; }
+    .server-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .server-url  { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+    .server-status { font-size: 12px; font-weight: 600; }
+    .server-status.running { color: var(--green); }
+    .server-status.stopped { color: var(--red); }
+
+    /* Main action buttons */
+    .btn-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+    .btn {
+      flex: 1; min-width: 130px; display: flex; align-items: center; justify-content: center;
+      gap: 9px; padding: 13px 24px; border-radius: 12px; border: none;
+      font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: all 0.22s; position: relative; overflow: hidden;
+    }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn:not(:disabled):hover { transform: translateY(-2px); }
+    .btn-start { background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.35); }
+    .btn-start:not(:disabled):hover { box-shadow: 0 6px 30px rgba(34,197,94,0.5); }
+    .btn-stop  { background: linear-gradient(135deg, #b91c1c, #ef4444); color: #fff;
+      box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+    .btn-stop:not(:disabled):hover { box-shadow: 0 6px 30px rgba(239,68,68,0.45); }
+    .btn-open  { background: linear-gradient(135deg, var(--accent), var(--purple)); color: #fff;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.35); text-decoration: none; }
+    .btn-open:not(.disabled):hover { box-shadow: 0 6px 30px rgba(59,130,246,0.5); }
+    .btn-open.disabled { opacity: 0.35; pointer-events: none; }
+
+    .spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn.loading .spinner { display: block; }
+    .btn.loading .btn-icon { display: none; }
+
+    /* Console */
+    .console-wrap { background: #040810; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .console-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+    }
+    .dots { display: flex; gap: 6px; }
+    .dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .d1{background:#ef4444} .d2{background:#f59e0b} .d3{background:#22c55e}
+    .console-title { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .clear-btn { background: none; border: none; font-size: 11px; color: var(--muted); cursor: pointer;
+      padding: 3px 8px; border-radius: 4px; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+    .clear-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    #log {
+      height: 260px; overflow-y: auto; padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.75;
+      scrollbar-width: thin; scrollbar-color: #1e3a5f #040810;
+    }
+    #log::-webkit-scrollbar { width: 5px; }
+    #log::-webkit-scrollbar-track { background: #040810; }
+    #log::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+    .log-line { color: #64748b; }
+    .log-line.ok  { color: #4ade80; }
+    .log-line.err { color: #f87171; }
+    .log-line.inf { color: #60a5fa; }
+    .log-line.wrn { color: #fbbf24; }
+    .placeholder { color: var(--muted); font-style: italic; }
+
+    /* Footer */
+    .footer { color: var(--muted); font-size: 12px; margin-top: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">🎯</div>
+    <h1>CareerAI Platform Launcher</h1>
+    <p class="subtitle">One click to start the full application</p>
+  </div>
+
+  <!-- Server Status Card -->
+  <div class="card">
+    <div class="card-label">Services</div>
+    <div class="server-row">
+
+      <div class="server-pill" id="pill-backend">
+        <div class="dot unknown" id="dot-backend"></div>
+        <div class="server-info">
+          <div class="server-name">FastAPI Backend</div>
+          <div class="server-url">localhost:8000 / API + AI Pipeline</div>
+        </div>
+        <div class="server-status" id="status-backend">—</div>
+      </div>
+
+      <div class="server-pill" id="pill-frontend">
+        <div class="dot unknown" id="dot-frontend"></div>
+        <div class="server-info">
+          <div class="server-name">React Frontend</div>
+          <div class="server-url">localhost:5173 / App UI</div>
+        </div>
+        <div class="server-status" id="status-frontend">—</div>
+      </div>
+
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-start" id="btn-start" onclick="startAll()">
+        <div class="spinner"></div>
+        <span class="btn-icon">▶</span>
+        Start Platform
+      </button>
+      <button class="btn btn-stop" id="btn-stop" onclick="stopAll()" disabled>
+        <div class="spinner"></div>
+        <span class="btn-icon">■</span>
+        Stop Platform
+      </button>
+      <a class="btn btn-open disabled" id="btn-open" href="http://localhost:5173" target="_blank">
+        <span>🌐</span>
+        Open App
+      </a>
+    </div>
+  </div>
+
+  <!-- Log Console -->
+  <div class="card">
+    <div class="card-label">Live Output</div>
+    <div class="console-wrap">
+      <div class="console-bar">
+        <div class="dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+        <div class="console-title">backend + frontend / stdout</div>
+        <button class="clear-btn" onclick="clearLog()">Clear</button>
+      </div>
+      <div id="log">
+        <div class="placeholder">▸ Click "Start Platform" to launch the full application...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">CareerAI v1.0 — Launcher control server on :8888</div>
+
+<script>
+  const CTRL = 'http://localhost:8888';
+  let _sse = null;
+
+  // ── Poll status every 3s ──────────────────────────────────────────────────
+  async function poll() {
+    try {
+      const r = await fetch(`${CTRL}/status`);
+      const d = await r.json();
+      applyStatus('backend',  d.backend.status,  d.backend.pid);
+      applyStatus('frontend', d.frontend.status, d.frontend.pid);
+      syncButtons(d.backend.status, d.frontend.status);
+    } catch {
+      applyStatus('backend',  'offline', null);
+      applyStatus('frontend', 'offline', null);
+    }
+  }
+
+  function applyStatus(srv, status, pid) {
+    const pill = document.getElementById(`pill-${srv}`);
+    const dot  = document.getElementById(`dot-${srv}`);
+    const lbl  = document.getElementById(`status-${srv}`);
+    dot.className = `dot ${status === 'running' ? 'running' : status === 'offline' ? 'unknown' : 'stopped'}`;
+    pill.className = `server-pill ${status === 'running' ? 'running' : 'stopped'}`;
+    lbl.className  = `server-status ${status === 'running' ? 'running' : 'stopped'}`;
+    lbl.textContent = status === 'running' ? `Running` : status === 'offline' ? 'Offline' : 'Stopped';
+  }
+
+  function syncButtons(be, fe) {
+    const anyRunning = be === 'running' || fe === 'running';
+    const bothRunning = be === 'running' && fe === 'running';
+    document.getElementById('btn-start').disabled = anyRunning;
+    document.getElementById('btn-stop').disabled  = !anyRunning;
+    const openBtn = document.getElementById('btn-open');
+    if (fe === 'running') {
+      openBtn.classList.remove('disabled');
+    } else {
+      openBtn.classList.add('disabled');
+    }
+  }
+
+  // ── SSE log stream ────────────────────────────────────────────────────────
+  function startSSE() {
+    if (_sse) return;
+    _sse = new EventSource(`${CTRL}/logs`);
+    _sse.onmessage = e => { try { appendLog(JSON.parse(e.data)); } catch {} };
+    _sse.onerror   = () => { _sse.close(); _sse = null; };
+  }
+
+  function appendLog(line) {
+    const el = document.getElementById('log');
+    const ph = el.querySelector('.placeholder');
+    if (ph) ph.remove();
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    const lo = line.toLowerCase();
+    if (lo.includes('error') || lo.includes('failed') || lo.includes('exception')) div.className += ' err';
+    else if (lo.includes('warn'))                                                  div.className += ' wrn';
+    else if (lo.includes('✅') || lo.includes('started') || lo.includes('running on') || lo.includes('local:')) div.className += ' ok';
+    else if (lo.includes('▸') || lo.includes('🌐') || lo.includes('[api]') || lo.includes('[ui]')) div.className += ' inf';
+    div.textContent = line;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLog() {
+    document.getElementById('log').innerHTML = '<div class="placeholder">▸ Log cleared.</div>';
+  }
+
+  // ── Start / Stop ──────────────────────────────────────────────────────────
+  async function startAll() {
+    const btn = document.getElementById('btn-start');
+    btn.classList.add('loading'); btn.disabled = true;
+    appendLog('▸ Sending start signal...');
+    startSSE();
+    try {
+      await fetch(`${CTRL}/start`, { method: 'POST' });
+      appendLog('▸ Both servers starting — watch the logs below...');
+    } catch {
+      appendLog('✖ Cannot reach launcher. Make sure launcher.py is running.');
+    }
+    btn.classList.remove('loading');
+    setTimeout(poll, 2000);
+  }
+
+  async function stopAll() {
+    const btn = document.getElementById('btn-stop');
+    btn.classList.add('loading'); btn.disabled = true;
+    try {
+      await fetch(`${CTRL}/stop`, { method: 'POST' });
+    } catch {
+      appendLog('✖ Cannot reach launcher.');
+    }
+    if (_sse) { _sse.close(); _sse = null; }
+    btn.classList.remove('loading');
+    poll();
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────
+  poll();
+  startAll();
+  setTimeout(() => {
+    window.location.href = 'http://localhost:5173';
+  }, 2500);
+</script>
+</body>
+</html>
